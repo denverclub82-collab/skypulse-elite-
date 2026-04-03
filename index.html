@@ -4,11 +4,10 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>SkyPulse Elite</title>
-  <!-- ✅ Без base href, с относительным путем -->
-  <link rel="manifest" href="./manifest.json">
+  <!-- ✅ Абсолютный путь для GitHub Pages -->
+  <link rel="manifest" href="/skypulse-elite-/manifest.json">
   <meta name="theme-color" content="#0A0A0A">
   
-  <!-- CDN зависимости -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
@@ -39,7 +38,6 @@
     .pwa-btn { background: var(--accent); color: #0A0A0A; font-weight: 600; border-radius: 0.5rem; padding: 0.5rem 1rem; transition: all 0.2s; }
     .pwa-btn:hover { opacity: 0.9; transform: translateY(-1px); }
     .pwa-btn:disabled { background: #333; color: #666; cursor: not-allowed; transform: none; }
-    .error-box { background: rgba(239,68,68,0.15); border: 1px solid #ef4444; border-radius: 0.75rem; padding: 1rem; margin: 1rem; }
   </style>
 </head>
 <body>
@@ -69,33 +67,33 @@
       const alerts = [];
       const rules = [
         { id: 1, check: today.tempmax > 35, msg: "Экстремальная жара. Избегайте солнца с 11:00 до 16:00.", type: "heat" },
-        { id: 2, check: today.tempmin < 0, msg: "Заморозки. Укройте растения и проверьте утепление.", type: "frost" },
-        { id: 3, check: today.uvindex >= 7, msg: "Высокий UV. SPF 50+ обязателен для выхода.", type: "uv" },
-        { id: 4, check: today.visibility < 1000, msg: "Плотный туман. Снизьте скорость, включите фары.", type: "fog" },
-        { id: 5, check: today.precip > 12 || today.windspeed > 45, msg: "Штормовое предупреждение. Закройте окна.", type: "storm" },
-        { id: 6, check: today.humidity > 88, msg: "Критическая влажность. Риск мигреней и ломоты.", type: "health" },
-        { id: 7, check: today.pressure < 1000, msg: "Низкое давление. Возможны головные боли.", type: "health" },
-        { id: 8, check: today.precipprob === 0 && days.slice(1,3).every(d=>d.precipprob<10), msg: "Идеально для мойки авто. 48ч без дождя.", type: "life" },
-        { id: 9, check: today.tempavg > 27 && today.humidity > 65, msg: "Высокая нагрузка на кондиционер. Заглушите шторы.", type: "energy" },
-        { id: 10, check: today.windspeed > 25, msg: "Сильные порывы. Уберите лёгкие предметы.", type: "wind" },
-        { id: 11, check: today.snow > 2, msg: "Обильный снегопад. Планируйте время с запасом.", type: "storm" },
-        { id: 12, check: today.precipprob > 70 && today.precip < 3, msg: "Морось. Зонт или лёгкая куртка будут кстати.", type: "rain" },
-        { id: 13, check: today.tempavg < 2 && today.windspeed > 20, msg: "Ощущается холоднее. Термобельё обязательно.", type: "frost" },
-        { id: 14, check: today.tempmax - today.tempmin > 16, msg: "Резкий перепад температур. Одевайтесь слоями.", type: "temp" },
-        { id: 15, check: today.solarradiation > 850, msg: "Пиковая инсоляция. Поляризационные очки.", type: "energy" },
-        { id: 16, check: today.dewpoint > 21, msg: "Душно. Кондиционер улучшит сон.", type: "health" },
-        { id: 17, check: today.precipprob < 5 && today.windspeed < 12 && today.tempavg > 16, msg: "Отлично для пробежки или прогулки после 18:00.", type: "life" },
-        { id: 18, check: today.humidity < 28, msg: "Пересушенный воздух. Включите увлажнитель.", type: "health" },
-        { id: 19, check: today.cloudcover > 80 && today.precip < 0.5, msg: "Пасмурно, но сухо. Идеально для фотосессий.", type: "life" },
-        { id: 20, check: today.snowdepth > 8, msg: "Высокий снег. Осторожно на скользких участках.", type: "storm" },
-        { id: 21, check: today.tempmax > 28 && today.uvindex < 4, msg: "Тепло без жара. Длительные прогулки безопасны.", type: "life" },
-        { id: 22, check: today.precip > 18, msg: "Ливень. Возможны локальные подтопления.", type: "storm" },
-        { id: 23, check: today.windspeed > 18 && today.tempavg > 22, msg: "Лёгкий бриз. Откройте окна для проветривания.", type: "life" },
-        { id: 24, check: today.pressure > 1022, msg: "Антициклон. Ясно, спокойно, высокое самочувствие.", type: "temp" },
-        { id: 25, check: today.uvindex < 3 && today.tempmax < 8, msg: "Мало солнца. Рекомендован витамин D.", type: "health" }
+        { id: 2, check: today.tempmin < 0, msg: "Заморозки. Укройте растения.", type: "frost" },
+        { id: 3, check: today.uvindex >= 7, msg: "Высокий UV. SPF 50+ обязателен.", type: "uv" },
+        { id: 4, check: today.visibility < 1000, msg: "Туман. Включите фары.", type: "fog" },
+        { id: 5, check: today.precip > 12 || today.windspeed > 45, msg: "Шторм. Закройте окна.", type: "storm" },
+        { id: 6, check: today.humidity > 88, msg: "Влажность. Риск мигрени.", type: "health" },
+        { id: 7, check: today.pressure < 1000, msg: "Низкое давление. Головная боль.", type: "health" },
+        { id: 8, check: today.precipprob === 0 && days.slice(1,3).every(d=>d.precipprob<10), msg: "Мойка авто: 48ч без дождя ✅", type: "life" },
+        { id: 9, check: today.tempavg > 27 && today.humidity > 65, msg: "Жара. Заглушите шторы.", type: "energy" },
+        { id: 10, check: today.windspeed > 25, msg: "Ветер. Уберите лёгкие вещи.", type: "wind" },
+        { id: 11, check: today.snow > 2, msg: "Снегопад. Запасите время.", type: "storm" },
+        { id: 12, check: today.precipprob > 70 && today.precip < 3, msg: "Морось. Зонт пригодится.", type: "rain" },
+        { id: 13, check: today.tempavg < 2 && today.windspeed > 20, msg: "Холодно. Термобельё.", type: "frost" },
+        { id: 14, check: today.tempmax - today.tempmin > 16, msg: "Перепад температур. Слои одежды.", type: "temp" },
+        { id: 15, check: today.solarradiation > 850, msg: "Солнце. Очки с поляризацией.", type: "energy" },
+        { id: 16, check: today.dewpoint > 21, msg: "Душно. Кондиционер.", type: "health" },
+        { id: 17, check: today.precipprob < 5 && today.windspeed < 12 && today.tempavg > 16, msg: "Идеально для прогулки 🚶", type: "life" },
+        { id: 18, check: today.humidity < 28, msg: "Сухо. Увлажнитель воздуха.", type: "health" },
+        { id: 19, check: today.cloudcover > 80 && today.precip < 0.5, msg: "Пасмурно. Фотосессия 📸", type: "life" },
+        { id: 20, check: today.snowdepth > 8, msg: "Снег. Осторожно на дорогах.", type: "storm" },
+        { id: 21, check: today.tempmax > 28 && today.uvindex < 4, msg: "Тепло и безопасно ☀️", type: "life" },
+        { id: 22, check: today.precip > 18, msg: "Ливень. Избегайте низин.", type: "storm" },
+        { id: 23, check: today.windspeed > 18 && today.tempavg > 22, msg: "Бриз. Проветрите помещение.", type: "life" },
+        { id: 24, check: today.pressure > 1022, msg: "Антициклон. Ясно и спокойно.", type: "temp" },
+        { id: 25, check: today.uvindex < 3 && today.tempmax < 8, msg: "Мало солнца. Витамин D.", type: "health" }
       ];
       rules.forEach(r => r.check && alerts.push(r));
-      const narrative = alerts.length > 3 ? `AI-Брифинг: ${alerts.slice(0,3).map(a=>a.msg).join(' ')}` : alerts.length > 0 ? `AI-Брифинг: ${alerts[0].msg}` : `AI-Брифинг: Условия идеальны. Без тревожных метео-факторов.`;
+      const narrative = alerts.length > 3 ? `AI-Брифинг: ${alerts.slice(0,3).map(a=>a.msg).join(' ')}` : alerts.length > 0 ? `AI-Брифинг: ${alerts[0].msg}` : `AI-Брифинг: Условия идеальны. Наслаждайтесь днём.`;
       return { narrative, alerts, tips: [alerts.some(a=>a.id===8) ? "Мойка ✅" : "Мойка ⏳", alerts.find(a=>a.id===9) ? "Энергия ⚡" : "Энергия ✅", alerts.find(a=>a.type==='health') ? "Здоровье ⚕️" : "Здоровье 💚"] };
     };
 
@@ -104,13 +102,11 @@
       const [loading, setLoading] = useState(true);
       const [error, setError] = useState(null);
       const [coords, setCoords] = useState({ lat: 55.7558, lon: 37.6173 });
-
       useEffect(() => {
         if (navigator.geolocation) {
-          navigator.geolocation.getCurrentPosition(p => setCoords({ lat: p.coords.latitude, lon: p.coords.longitude }), e => setError('Геолокация отключена. Показаны данные по умолчанию.'));
+          navigator.geolocation.getCurrentPosition(p => setCoords({ lat: p.coords.latitude, lon: p.coords.longitude }), e => setError('Геолокация отключена.'));
         }
       }, []);
-
       useEffect(() => {
         const fetch = async () => {
           try {
@@ -124,7 +120,6 @@
         };
         if (coords.lat) fetch();
       }, [coords]);
-
       return { data, loading, error };
     };
 
@@ -138,7 +133,6 @@
         if (weather.cloudcover > 55 || c.includes('cloud') || c.includes('fog')) return 'https://assets9.lottiefiles.com/packages/lf20_4w7t8j8t.json';
         return 'https://assets9.lottiefiles.com/packages/lf20_jbrw3hcz.json';
       }, [weather]);
-
       useEffect(() => {
         const container = document.getElementById('lottie-bg');
         if (!container) return;
@@ -148,7 +142,6 @@
         catch (e) { console.warn('Lottie error:', e); }
         return () => animRef.current?.destroy();
       }, [asset]);
-
       return <motion.div initial={{opacity:0}} animate={{opacity:0.45}} exit={{opacity:0}} className="fixed inset-0 z-0 pointer-events-none select-none" />;
     };
 
@@ -188,8 +181,9 @@
         window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); setDeferredPrompt(e); setPwaReady(true); });
         window.addEventListener('appinstalled', () => { setDeferredPrompt(null); setPwaReady(false); });
         if ('Notification' in window) setNotifStatus(Notification.permission);
+        // ✅ Абсолютный путь для GitHub Pages
         if ('serviceWorker' in navigator) {
-          navigator.serviceWorker.register('./service-worker.js')
+          navigator.serviceWorker.register('/skypulse-elite-/service-worker.js')
             .then(reg => { setSwRegistered(true); console.log('SW ready:', reg.scope); })
             .catch(err => console.warn('SW fail:', err));
         }
@@ -217,7 +211,7 @@
       if (error) return (
         <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center bg-obsidian">
           <div className="text-red-400 text-5xl mb-4">⚠️</div>
-          <h2 className="text-xl font-bold mb-2 text-white">Ошибка загрузки</h2>
+          <h2 className="text-xl font-bold mb-2 text-white">Ошибка</h2>
           <div className="error-box text-sm text-gray-300 mb-4 max-w-md text-left">{error}</div>
           <button onClick={()=>window.location.reload()} className="obsidian-glass px-5 py-2 text-sm hover:bg-white/10 transition">🔄 Обновить</button>
         </div>
@@ -234,14 +228,12 @@
         <AnimatePresence>
           <main className="min-h-screen p-4 md:p-8 max-w-7xl mx-auto space-y-5 relative z-10">
             <LottieBg weather={today} />
-            
             <div className="flex flex-wrap gap-3 justify-end">
               {pwaReady && <button onClick={handleInstall} className="pwa-btn text-sm">📲 Установить приложение</button>}
               <button onClick={handleNotifPermission} disabled={notifStatus === 'granted'} className="pwa-btn text-sm" style={notifStatus==='granted' ? {background:'#10b981',color:'#fff'} : {}}>
                 {notifStatus === 'granted' ? '🔔 Включено' : '🔔 Разрешить уведомления'}
               </button>
             </div>
-
             <header className="obsidian-glass p-5 flex justify-between items-center liquid-hover">
               <div>
                 <h1 className="text-2xl font-bold tracking-tight">SkyPulse <span className="text-accent">Elite</span></h1>
@@ -252,12 +244,10 @@
                 <p className="text-sm text-gray-400 capitalize">{today?.conditions || 'Загрузка...'}</p>
               </div>
             </header>
-
             <motion.div initial={{ y: 10, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="obsidian-glass p-5">
               <div className="flex items-center gap-2 mb-2"><span className="text-accent">☀️</span><h2 className="font-semibold">AI-Брифинг</h2></div>
               <p className="text-sm leading-relaxed text-gray-200">{ai?.narrative || 'Ожидание данных...'}</p>
             </motion.div>
-
             {ai?.alerts?.length > 0 && (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                 {ai.alerts.slice(0,6).map((a, i) => (
@@ -268,14 +258,12 @@
                 ))}
               </div>
             )}
-
             <div className="obsidian-glass p-4">
               <h3 className="text-lg font-semibold mb-1">30-Дневный Нейро-Прогноз</h3>
               <NeuralChart data={data} />
             </div>
-
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              {[{icon:'💧',title:'Мойка авто',val:ai?.tips?.[0] || '—',col:'text-cyan-400'},{icon:'⚡',title:'Нагрузка на сеть',val:ai?.tips?.[1] || '—',col:'text-yellow-400'},{icon:'💚',title:'Био-индекс',val:ai?.tips?.[2] || '—',col:'text-emerald-400'}].map((c,i)=>(
+              {[{icon:'💧',title:'Мойка авто',val:ai?.tips?.[0] || '—',col:'text-cyan-400'},{icon:'⚡',title:'Нагрузка',val:ai?.tips?.[1] || '—',col:'text-yellow-400'},{icon:'💚',title:'Био-индекс',val:ai?.tips?.[2] || '—',col:'text-emerald-400'}].map((c,i)=>(
                 <div key={i} className="obsidian-glass p-4 flex items-center gap-3 liquid-hover">
                   <div className="p-2 bg-black/40 rounded-lg text-xl">{c.icon}</div>
                   <div><p className="text-xs text-gray-400">{c.title}</p><p className={`font-semibold ${c.col}`}>{c.val}</p></div>
