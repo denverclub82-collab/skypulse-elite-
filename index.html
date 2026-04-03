@@ -4,8 +4,12 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>SkyPulse Elite</title>
-  <link rel="manifest" href="/manifest.json">
+  <!-- 🔹 FIX: Base path для GitHub Pages -->
+  <base href="/skypulse-elite-/">
+  <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#0A0A0A">
+  
+  <!-- CDN зависимости -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
@@ -13,6 +17,7 @@
   <script src="https://unpkg.com/lottie-web@5.12.2/build/player/lottie.min.js"></script>
   <script src="https://unpkg.com/recharts@2.10.3/umd/Recharts.js"></script>
   <script src="https://unpkg.com/framer-motion@10.16.4/dist/framer-motion.js"></script>
+  
   <script>
     tailwind.config = {
       theme: {
@@ -35,6 +40,7 @@
     .pwa-btn { background: var(--accent); color: #0A0A0A; font-weight: 600; border-radius: 0.5rem; padding: 0.5rem 1rem; transition: all 0.2s; }
     .pwa-btn:hover { opacity: 0.9; transform: translateY(-1px); }
     .pwa-btn:disabled { background: #333; color: #666; cursor: not-allowed; transform: none; }
+    .error-box { background: rgba(239,68,68,0.15); border: 1px solid #ef4444; border-radius: 0.75rem; padding: 1rem; margin: 1rem; }
   </style>
 </head>
 <body>
@@ -45,6 +51,8 @@
     const { useState, useEffect, useMemo, useRef } = React;
     const { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } = Recharts;
     const { motion, AnimatePresence } = framerMotion;
+    
+    // 🔹 Ваш API ключ (убедитесь, что в настройках Visual Crossing добавлен домен: denverclub82-collab.github.io)
     const API_KEY = '7QKDX6PBE6GQDC4WEU4A9J3KL';
 
     // 🎨 Seasonal Palettes
@@ -100,7 +108,7 @@
       };
     };
 
-    // 🌦 Weather Engine
+    // 🌦 Weather Engine с обработкой ошибок
     const useWeather = () => {
       const [data, setData] = useState(null);
       const [loading, setLoading] = useState(true);
@@ -109,7 +117,13 @@
 
       useEffect(() => {
         if (navigator.geolocation) {
-          navigator.geolocation.getCurrentPosition(p => setCoords({ lat: p.coords.latitude, lon: p.coords.longitude }), () => setError('Геолокация отключена. Показаны данные по умолчанию.'));
+          navigator.geolocation.getCurrentPosition(
+            p => setCoords({ lat: p.coords.latitude, lon: p.coords.longitude }), 
+            err => {
+              console.warn('Geolocation error:', err);
+              setError('Геолокация отключена. Показаны данные по умолчанию.');
+            }
+          );
         }
       }, []);
 
@@ -117,11 +131,32 @@
         const fetch = async () => {
           try {
             setLoading(true);
-            const res = await fetch(`https://weather.visualcrossing.com/VisualCrossingWebServices/rest/services/timeline/${coords.lat},${coords.lon}/next30days?unitGroup=metric&include=days&key=${API_KEY}`);
-            if (!res.ok) throw new Error(`Ошибка API: ${res.status}`);
+            console.log('Fetching weather for:', coords);
+            const url = `https://weather.visualcrossing.com/VisualCrossingWebServices/rest/services/timeline/${coords.lat},${coords.lon}/next30days?unitGroup=metric&include=days&key=${API_KEY}`;
+            const res = await fetch(url);
+            
+            if (!res.ok) {
+              const text = await res.text();
+              console.error('API Error:', res.status, text);
+              throw new Error(`Visual Crossing API: ${res.status} ${res.statusText}`);
+            }
+            
             const json = await res.json();
-            setData(json.days.map(d => ({ ...d, date: new Date(d.datetime).toLocaleDateString('ru-RU', { weekday: 'short', day: 'numeric' }) })));
-          } catch (e) { setError(e.message); } finally { setLoading(false); }
+            console.log('Weather data loaded:', json.days?.length, 'days');
+            setData(json.days.map(d => ({ 
+              ...d, 
+              date: new Date(d.datetime).toLocaleDateString('ru-RU', { weekday: 'short', day: 'numeric' }) 
+            })));
+          } catch (e) {
+            console.error('Fetch error:', e);
+            setError(e.message.includes('401') 
+              ? '❌ Неверный API-ключ или домен не добавлен в Visual Crossing' 
+              : e.message.includes('404') 
+                ? '❌ Координаты не найдены' 
+                : `❌ Ошибка: ${e.message}`);
+          } finally {
+            setLoading(false);
+          }
         };
         if (coords.lat) fetch();
       }, [coords]);
@@ -143,9 +178,20 @@
 
       useEffect(() => {
         const container = document.getElementById('lottie-bg');
+        if (!container) return;
         container.innerHTML = '';
         if (animRef.current) animRef.current.destroy();
-        animRef.current = lottie.loadAnimation({ container, renderer: 'svg', loop: true, autoplay: true, path: asset });
+        try {
+          animRef.current = lottie.loadAnimation({ 
+            container, 
+            renderer: 'svg', 
+            loop: true, 
+            autoplay: true, 
+            path: asset 
+          });
+        } catch (e) {
+          console.warn('Lottie load error:', e);
+        }
         return () => animRef.current?.destroy();
       }, [asset]);
 
@@ -183,8 +229,17 @@
       const ai = today ? generateBrief(data) : null;
       const [pwaReady, setPwaReady] = useState(false);
       const [deferredPrompt, setDeferredPrompt] = useState(null);
-      const [notifStatus, setNotifStatus] = useState('denied'); // default, granted, denied
+      const [notifStatus, setNotifStatus] = useState('default');
       const [swRegistered, setSwRegistered] = useState(false);
+
+      // 🔹 Авто-очистка кэша при обновлении версии
+      useEffect(() => {
+        if ('caches' in window) {
+          caches.keys().then(keys => {
+            keys.forEach(k => { if (k !== 'skypulse-v3') caches.delete(k); });
+          });
+        }
+      }, []);
 
       // PWA Install Logic
       useEffect(() => {
@@ -193,20 +248,15 @@
           setDeferredPrompt(e);
           setPwaReady(true);
         });
-
         window.addEventListener('appinstalled', () => {
           setDeferredPrompt(null);
           setPwaReady(false);
           setNotifStatus('prompt');
         });
-
-        // Check initial permission
         if ('Notification' in window) setNotifStatus(Notification.permission);
-
-        // Register Service Worker
-        if ('serviceWorker' in navigator && window.location.protocol === 'https:' || location.hostname === 'localhost') {
-          navigator.serviceWorker.register('/service-worker.js')
-            .then(reg => setSwRegistered(true))
+        if ('serviceWorker' in navigator) {
+          navigator.serviceWorker.register('service-worker.js')
+            .then(reg => { setSwRegistered(true); console.log('SW registered:', reg.scope); })
             .catch(err => console.warn('SW registration failed:', err));
         }
       }, []);
@@ -230,16 +280,43 @@
         const perm = await Notification.requestPermission();
         setNotifStatus(perm);
         if (perm === 'granted' && swRegistered) {
-          // Demo subscription (для production нужен VAPID public key)
-          const sub = await navigator.serviceWorker.ready.then(reg => 
-            reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlBase64ToUint8Array('BEl62iUYgUivxIkv69yViEuiBIa-aTqM5hZj6x1y7K1q4cZ1qQ9Y7K1qQ9Y7K1qQ9Y7K1qQ9Y7K1qQ9Y7K1qQ9Y=') })
-          );
-          console.log('Push Subscribed:', sub);
+          try {
+            const sub = await navigator.serviceWorker.ready.then(reg => 
+              reg.pushManager.subscribe({ 
+                userVisibleOnly: true, 
+                applicationServerKey: urlBase64ToUint8Array('BEl62iUYgUivxIkv69yViEuiBIa-aTqM5hZj6x1y7K1q4cZ1qQ9Y7K1qQ9Y7K1qQ9Y7K1qQ9Y7K1qQ9Y7K1qQ9Y=') 
+              })
+            );
+            console.log('Push Subscribed:', sub);
+          } catch (e) { console.warn('Push subscribe error:', e); }
         }
       };
 
-      if (loading) return <div className="h-screen flex flex-col items-center justify-center text-gray-400"><div className="w-10 h-10 border-2 border-accent border-t-transparent rounded-full animate-spin mb-4"></div><p className="animate-pulse text-sm">Синхронизация спутников...</p></div>;
-      if (error) return <div className="h-screen flex flex-col items-center justify-center p-6 text-center"><div className="text-red-400 text-4xl mb-3">⚠️</div><h2 className="text-xl font-bold mb-2">Связь потеряна</h2><p className="text-sm text-gray-400 max-w-xs mb-5">{error}</p><button onClick={()=>window.location.reload()} className="obsidian-glass px-4 py-2 text-sm hover:bg-white/10 transition">Повторить</button></div>;
+      // 🔹 Экран ошибки с деталями для отладки
+      if (error) return (
+        <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center bg-obsidian">
+          <div className="text-red-400 text-5xl mb-4">⚠️</div>
+          <h2 className="text-xl font-bold mb-2 text-white">Не удалось загрузить данные</h2>
+          <div className="error-box text-left text-sm text-gray-300 mb-4 max-w-md">
+            <p className="font-semibold text-red-300 mb-1">Детали ошибки:</p>
+            <p>{error}</p>
+            <p className="mt-2 text-xs text-gray-400">
+              💡 Если ошибка про "401" или "API key" — зайдите в visualcrossing.com → Dashboard → API Keys → 
+              добавьте <code>denverclub82-collab.github.io</code> в поле "Allowed Domains".
+            </p>
+          </div>
+          <button onClick={()=>window.location.reload()} className="obsidian-glass px-5 py-2 text-sm hover:bg-white/10 transition mb-2">🔄 Повторить</button>
+          <button onClick={()=>{navigator.geolocation.getCurrentPosition(p=>window.location.reload());}} className="obsidian-glass px-5 py-2 text-sm hover:bg-white/10 transition">📍 Обновить геолокацию</button>
+        </div>
+      );
+
+      if (loading) return (
+        <div className="h-screen flex flex-col items-center justify-center text-gray-400 bg-obsidian">
+          <div className="w-12 h-12 border-2 border-accent border-t-transparent rounded-full animate-spin mb-4"></div>
+          <p className="animate-pulse text-sm">Загрузка погодных спутников...</p>
+          <p className="text-xs text-gray-500 mt-2">Координаты: {coords?.lat?.toFixed(2)}, {coords?.lon?.toFixed(2)}</p>
+        </div>
+      );
 
       return (
         <AnimatePresence>
@@ -248,9 +325,9 @@
             
             {/* PWA & Notification Controls */}
             <div className="flex flex-wrap gap-3 justify-end">
-              {pwaReady && <button onClick={handleInstall} className="pwa-btn text-sm">📲 Установить PWA</button>}
+              {pwaReady && <button onClick={handleInstall} className="pwa-btn text-sm">📲 Установить приложение</button>}
               <button onClick={handleNotifPermission} disabled={notifStatus === 'granted'} className="pwa-btn text-sm" style={notifStatus==='granted' ? {background:'#10b981',color:'#fff'} : {}}>
-                {notifStatus === 'granted' ? '🔔 Уведомления включены' : '🔔 Разрешить уведомления'}
+                {notifStatus === 'granted' ? '🔔 Включено' : '🔔 Разрешить уведомления'}
               </button>
             </div>
 
@@ -260,17 +337,17 @@
                 <p className="text-xs text-gray-400 mt-1">{new Date().toLocaleDateString('ru-RU', { weekday: 'long', day: 'numeric', month: 'long' })} • {season.n}</p>
               </div>
               <div className="text-right">
-                <span className="text-4xl font-bold">{today.tempmax.toFixed(1)}°</span>
-                <p className="text-sm text-gray-400 capitalize">{today.conditions}</p>
+                <span className="text-4xl font-bold">{today?.tempmax?.toFixed(1) || '--'}°</span>
+                <p className="text-sm text-gray-400 capitalize">{today?.conditions || 'Загрузка...'}</p>
               </div>
             </header>
 
             <motion.div initial={{ y: 10, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="obsidian-glass p-5">
               <div className="flex items-center gap-2 mb-2"><span className="text-accent">☀️</span><h2 className="font-semibold">AI-Брифинг</h2></div>
-              <p className="text-sm leading-relaxed text-gray-200">{ai.narrative}</p>
+              <p className="text-sm leading-relaxed text-gray-200">{ai?.narrative || 'Ожидание данных...'}</p>
             </motion.div>
 
-            {ai.alerts.length > 0 && (
+            {ai?.alerts?.length > 0 && (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                 {ai.alerts.slice(0,6).map((a, i) => (
                   <motion.div key={a.id} initial={{ opacity:0, x:-8 }} animate={{ opacity:1, x:0, transition:{ delay: i*0.05 } }} className="obsidian-glass p-4 border-l-2 border-l-accent">
@@ -287,7 +364,7 @@
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              {[{icon:'💧',title:'Мойка авто',val:ai.tips[0],col:'text-cyan-400'},{icon:'⚡',title:'Нагрузка на сеть',val:ai.tips[1],col:'text-yellow-400'},{icon:'💚',title:'Био-индекс',val:ai.tips[2],col:'text-emerald-400'}].map((c,i)=>(
+              {[{icon:'💧',title:'Мойка авто',val:ai?.tips?.[0] || '—',col:'text-cyan-400'},{icon:'⚡',title:'Нагрузка на сеть',val:ai?.tips?.[1] || '—',col:'text-yellow-400'},{icon:'💚',title:'Био-индекс',val:ai?.tips?.[2] || '—',col:'text-emerald-400'}].map((c,i)=>(
                 <div key={i} className="obsidian-glass p-4 flex items-center gap-3 liquid-hover">
                   <div className="p-2 bg-black/40 rounded-lg text-xl">{c.icon}</div>
                   <div><p className="text-xs text-gray-400">{c.title}</p><p className={`font-semibold ${c.col}`}>{c.val}</p></div>
@@ -299,7 +376,6 @@
       );
     };
 
-    // VAPID key converter (required for push)
     const urlBase64ToUint8Array = (base64String) => {
       const padding = '='.repeat((4 - base64String.length % 4) % 4);
       const base64 = (base64String + padding).replace(/\-/g, '+').replace(/_/g, '/');
