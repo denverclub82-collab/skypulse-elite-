@@ -2,390 +2,223 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>SkyPulse Elite</title>
-  <!-- 🔹 FIX: Base path для GitHub Pages -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SkyPulse — Диагностика</title>
   <base href="/skypulse-elite-/">
-  <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#0A0A0A">
-  
-  <!-- CDN зависимости -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-  <script src="https://unpkg.com/lottie-web@5.12.2/build/player/lottie.min.js"></script>
-  <script src="https://unpkg.com/recharts@2.10.3/umd/Recharts.js"></script>
-  <script src="https://unpkg.com/framer-motion@10.16.4/dist/framer-motion.js"></script>
-  
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: { obsidian: '#0A0A0A', glass: 'rgba(255,255,255,0.03)', border: 'rgba(255,255,255,0.08)', accent: 'var(--accent)', mesh1: 'var(--mesh1)', mesh2: 'var(--mesh2)' },
-          backdropBlur: { glass: '16px' }
-        }
-      }
-    }
-  </script>
   <style>
-    :root { --accent: #38bdf8; --mesh1: #1e3a8a; --mesh2: #0f172a; }
-    body { margin: 0; background: #0A0A0A; color: white; font-family: system-ui, -apple-system, sans-serif; overflow-x: hidden; min-height: 100vh; background-image: radial-gradient(circle at 15% 20%, var(--mesh1) 0%, transparent 45%), radial-gradient(circle at 85% 85%, var(--mesh2) 0%, transparent 45%); }
-    .obsidian-glass { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); backdrop-filter: blur(16px); border-radius: 1rem; box-shadow: 0 8px 32px rgba(0,0,0,0.3); }
-    .liquid-hover { transition: all 0.4s cubic-bezier(0.34,1.56,0.64,1); }
-    .liquid-hover:hover { transform: scale(1.015); box-shadow: 0 12px 40px rgba(56,189,248,0.15); }
-    #lottie-bg { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
-    #root { position: relative; z-index: 10; }
-    .recharts-wrapper { overflow: visible !important; }
-    .pwa-btn { background: var(--accent); color: #0A0A0A; font-weight: 600; border-radius: 0.5rem; padding: 0.5rem 1rem; transition: all 0.2s; }
-    .pwa-btn:hover { opacity: 0.9; transform: translateY(-1px); }
-    .pwa-btn:disabled { background: #333; color: #666; cursor: not-allowed; transform: none; }
-    .error-box { background: rgba(239,68,68,0.15); border: 1px solid #ef4444; border-radius: 0.75rem; padding: 1rem; margin: 1rem; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { 
+      font-family: system-ui, sans-serif; 
+      background: #0A0A0A; 
+      color: #fff; 
+      padding: 1rem; 
+      line-height: 1.5;
+    }
+    .card { 
+      background: rgba(255,255,255,0.05); 
+      border: 1px solid rgba(255,255,255,0.1); 
+      border-radius: 12px; 
+      padding: 1rem; 
+      margin-bottom: 1rem;
+    }
+    .status { display: flex; align-items: center; gap: 0.5rem; margin: 0.5rem 0; }
+    .ok { color: #10b981; }
+    .err { color: #ef4444; }
+    .warn { color: #fbbf24; }
+    .log { 
+      background: #000; 
+      border-radius: 8px; 
+      padding: 0.75rem; 
+      font-family: monospace; 
+      font-size: 0.85rem; 
+      max-height: 200px; 
+      overflow-y: auto; 
+      white-space: pre-wrap;
+      border: 1px solid #333;
+    }
+    button {
+      background: #38bdf8;
+      color: #0A0A0A;
+      border: none;
+      padding: 0.75rem 1.5rem;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      margin: 0.5rem 0;
+    }
+    button:hover { opacity: 0.9; }
+    button:disabled { background: #333; color: #666; cursor: not-allowed; }
+    .hidden { display: none; }
   </style>
 </head>
 <body>
-  <div id="lottie-bg"></div>
-  <div id="root"></div>
+  <h1>🔧 SkyPulse Elite — Диагностика</h1>
+  <p style="color:#888;margin-bottom:1rem">Этот файл проверяет, что именно не загружается. Скопируйте результат и отправьте разработчику.</p>
 
-  <script type="text/babel">
-    const { useState, useEffect, useMemo, useRef } = React;
-    const { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } = Recharts;
-    const { motion, AnimatePresence } = framerMotion;
+  <div class="card">
+    <h3>📋 Статус загрузки</h3>
+    <div id="checks"></div>
+  </div>
+
+  <div class="card">
+    <h3>🌐 Тест API (Visual Crossing)</h3>
+    <button id="testApi">🔄 Проверить API</button>
+    <div id="apiResult" class="log hidden">Ожидание...</div>
+  </div>
+
+  <div class="card">
+    <h3>📁 Проверка файлов</h3>
+    <button id="testFiles">🔄 Проверить manifest.json и SW</button>
+    <div id="fileResult" class="log hidden">Ожидание...</div>
+  </div>
+
+  <div class="card">
+    <h3>📱 Информация об устройстве</h3>
+    <div id="deviceInfo" class="log"></div>
+  </div>
+
+  <div class="card">
+    <h3>🚀 Запустить полноценное приложение</h3>
+    <button id="launchApp" disabled>⏳ Сначала пройдите диагностику</button>
+    <p style="color:#666;font-size:0.9rem;margin-top:0.5rem">Если все проверки зелёные — кнопка активируется.</p>
+  </div>
+
+  <script>
+    const log = (el, msg, type = 'info') => {
+      el.classList.remove('hidden');
+      el.textContent += `\n[${new Date().toLocaleTimeString()}] ${msg}`;
+      if (type === 'err') el.classList.add('err');
+      if (type === 'ok') el.classList.add('ok');
+    };
+
+    const check = (id, name, result, details = '') => {
+      const div = document.createElement('div');
+      div.className = `status ${result ? 'ok' : 'err'}`;
+      div.innerHTML = `<span>${result ? '✅' : '❌'}</span> <strong>${name}</strong>${details ? `<br><small style="color:#888">${details}</small>` : ''}`;
+      document.getElementById(id).appendChild(div);
+      return result;
+    };
+
+    // 📱 Device info
+    (function() {
+      const info = document.getElementById('deviceInfo');
+      info.textContent = `
+UA: ${navigator.userAgent}
+Platform: ${navigator.platform}
+Language: ${navigator.language}
+Online: ${navigator.onLine}
+HTTPS: ${location.protocol === 'https:' ? 'Да' : 'Нет'}
+Path: ${location.pathname}
+Origin: ${location.origin}
+      `.trim();
+    })();
+
+    // 🔍 Basic checks
+    (function() {
+      const checks = document.getElementById('checks');
+      check('checks', 'DOM loaded', true);
+      check('checks', 'CSS applied', getComputedStyle(document.body).backgroundColor === 'rgb(10, 10, 10)', 'background: #0A0A0A');
+      check('checks', 'JavaScript enabled', true);
+      check('checks', 'Fetch API', typeof fetch === 'function');
+      check('checks', 'Geolocation', 'geolocation' in navigator);
+      check('checks', 'Service Workers', 'serviceWorker' in navigator);
+      check('checks', 'Manifest link', !!document.querySelector('link[rel="manifest"]'), document.querySelector('link[rel="manifest"]')?.href || 'не найден');
+    })();
+
+    // 🌐 API Test
+    document.getElementById('testApi').addEventListener('click', async () => {
+      const result = document.getElementById('apiResult');
+      result.classList.remove('hidden');
+      result.textContent = '🔄 Запрос к Visual Crossing...';
+      
+      const API_KEY = '7QKDX6PBE6GQDC4WEU4A9J3KL';
+      const coords = { lat: 55.7558, lon: 37.6173 }; // Москва для теста
+      
+      try {
+        const url = `https://weather.visualcrossing.com/VisualCrossingWebServices/rest/services/timeline/${coords.lat},${coords.lon}/next30days?unitGroup=metric&include=days&key=${API_KEY}`;
+        log(result, `GET ${url}`);
+        
+        const res = await fetch(url);
+        log(result, `Status: ${res.status} ${res.statusText}`);
+        
+        if (!res.ok) {
+          const text = await res.text();
+          log(result, `❌ Ответ сервера: ${text.slice(0, 200)}`, 'err');
+          check('checks', 'Visual Crossing API', false, `HTTP ${res.status}`);
+          return;
+        }
+        
+        const json = await res.json();
+        log(result, `✅ Получено дней прогноза: ${json.days?.length || 0}`);
+        log(result, `📍 Город: ${json.resolvedAddress || 'не определён'}`);
+        check('checks', 'Visual Crossing API', true, `${json.days?.length} дней данных`);
+        
+      } catch (e) {
+        log(result, `❌ Ошибка сети: ${e.message}`, 'err');
+        check('checks', 'Visual Crossing API', false, e.message);
+      }
+    });
+
+    // 📁 File Test
+    document.getElementById('testFiles').addEventListener('click', async () => {
+      const result = document.getElementById('fileResult');
+      result.classList.remove('hidden');
+      result.textContent = '🔄 Проверка файлов...';
+
+      // Test manifest.json
+      try {
+        const mRes = await fetch('manifest.json');
+        if (mRes.ok) {
+          const mJson = await mRes.json();
+          log(result, `✅ manifest.json: ${mJson.name || 'OK'}`);
+          check('checks', 'manifest.json', true);
+        } else {
+          log(result, `❌ manifest.json: HTTP ${mRes.status}`, 'err');
+          check('checks', 'manifest.json', false);
+        }
+      } catch (e) {
+        log(result, `❌ manifest.json не загружен: ${e.message}`, 'err');
+        check('checks', 'manifest.json', false);
+      }
+
+      // Test service-worker.js
+      try {
+        const swRes = await fetch('service-worker.js');
+        if (swRes.ok) {
+          log(result, `✅ service-worker.js: загружен`);
+          check('checks', 'service-worker.js', true);
+        } else {
+          log(result, `❌ service-worker.js: HTTP ${swRes.status}`, 'err');
+          check('checks', 'service-worker.js', false);
+        }
+      } catch (e) {
+        log(result, `❌ service-worker.js не загружен: ${e.message}`, 'err');
+        check('checks', 'service-worker.js', false);
+      }
+    });
+
+    // 🚀 Launch App (если всё зелёное)
+    const launchBtn = document.getElementById('launchApp');
+    const allChecks = () => document.querySelectorAll('#checks .status').length > 0 && 
+      ![...document.querySelectorAll('#checks .status')].some(el => el.classList.contains('err'));
     
-    // 🔹 Ваш API ключ (убедитесь, что в настройках Visual Crossing добавлен домен: denverclub82-collab.github.io)
-    const API_KEY = '7QKDX6PBE6GQDC4WEU4A9J3KL';
-
-    // 🎨 Seasonal Palettes
-    const getPalette = () => {
-      const m = new Date().getMonth();
-      const p = {
-        11:{a:'#818cf8',m1:'#1e1b4b',m2:'#0f172a',n:'Winter'},0:{a:'#818cf8',m1:'#1e1b4b',m2:'#0f172a',n:'Winter'},1:{a:'#818cf8',m1:'#1e1b4b',m2:'#0f172a',n:'Winter'},
-        2:{a:'#34d399',m1:'#064e3b',m2:'#022c22',n:'Spring'},3:{a:'#34d399',m1:'#064e3b',m2:'#022c22',n:'Spring'},4:{a:'#34d399',m1:'#064e3b',m2:'#022c22',n:'Spring'},
-        5:{a:'#fbbf24',m1:'#78350f',m2:'#451a03',n:'Summer'},6:{a:'#fb923c',m1:'#9a3412',m2:'#7c2d12',n:'Summer'},7:{a:'#fb923c',m1:'#9a3412',m2:'#7c2d12',n:'Summer'},
-        8:{a:'#d97706',m1:'#78350f',m2:'#451a03',n:'Autumn'},9:{a:'#d97706',m1:'#78350f',m2:'#451a03',n:'Autumn'},10:{a:'#d97706',m1:'#78350f',m2:'#451a03',n:'Autumn'}
-      };
-      return p[m] || p[0];
-    };
-
-    // 🧠 AI Advisory Engine
-    const generateBrief = (days) => {
-      if (!days?.length) return { narrative: 'Загрузка нейроядра...', alerts: [], tips: [] };
-      const today = days[0];
-      const alerts = [];
-      const rules = [
-        { id: 1, check: today.tempmax > 35, msg: "Экстремальная жара. Избегайте солнца с 11:00 до 16:00.", type: "heat" },
-        { id: 2, check: today.tempmin < 0, msg: "Заморозки. Укройте растения и проверьте утепление.", type: "frost" },
-        { id: 3, check: today.uvindex >= 7, msg: "Высокий UV. SPF 50+ обязателен для выхода.", type: "uv" },
-        { id: 4, check: today.visibility < 1000, msg: "Плотный туман. Снизьте скорость, включите фары.", type: "fog" },
-        { id: 5, check: today.precip > 12 || today.windspeed > 45, msg: "Штормовое предупреждение. Закройте окна.", type: "storm" },
-        { id: 6, check: today.humidity > 88, msg: "Критическая влажность. Риск мигреней и ломоты.", type: "health" },
-        { id: 7, check: today.pressure < 1000, msg: "Низкое давление. Возможны головные боли.", type: "health" },
-        { id: 8, check: today.precipprob === 0 && days.slice(1,3).every(d=>d.precipprob<10), msg: "Идеально для мойки авто. 48ч без дождя.", type: "life" },
-        { id: 9, check: today.tempavg > 27 && today.humidity > 65, msg: "Высокая нагрузка на кондиционер. Заглушите шторы.", type: "energy" },
-        { id: 10, check: today.windspeed > 25, msg: "Сильные порывы. Уберите лёгкие предметы.", type: "wind" },
-        { id: 11, check: today.snow > 2, msg: "Обильный снегопад. Планируйте время с запасом.", type: "storm" },
-        { id: 12, check: today.precipprob > 70 && today.precip < 3, msg: "Морось. Зонт или лёгкая куртка будут кстати.", type: "rain" },
-        { id: 13, check: today.tempavg < 2 && today.windspeed > 20, msg: "Ощущается холоднее. Термобельё обязательно.", type: "frost" },
-        { id: 14, check: today.tempmax - today.tempmin > 16, msg: "Резкий перепад температур. Одевайтесь слоями.", type: "temp" },
-        { id: 15, check: today.solarradiation > 850, msg: "Пиковая инсоляция. Поляризационные очки.", type: "energy" },
-        { id: 16, check: today.dewpoint > 21, msg: "Душно. Кондиционер улучшит сон.", type: "health" },
-        { id: 17, check: today.precipprob < 5 && today.windspeed < 12 && today.tempavg > 16, msg: "Отлично для пробежки или прогулки после 18:00.", type: "life" },
-        { id: 18, check: today.humidity < 28, msg: "Пересушенный воздух. Включите увлажнитель.", type: "health" },
-        { id: 19, check: today.cloudcover > 80 && today.precip < 0.5, msg: "Пасмурно, но сухо. Идеально для фотосессий.", type: "life" },
-        { id: 20, check: today.snowdepth > 8, msg: "Высокий снег. Осторожно на скользких участках.", type: "storm" },
-        { id: 21, check: today.tempmax > 28 && today.uvindex < 4, msg: "Тепло без жара. Длительные прогулки безопасны.", type: "life" },
-        { id: 22, check: today.precip > 18, msg: "Ливень. Возможны локальные подтопления.", type: "storm" },
-        { id: 23, check: today.windspeed > 18 && today.tempavg > 22, msg: "Лёгкий бриз. Откройте окна для проветривания.", type: "life" },
-        { id: 24, check: today.pressure > 1022, msg: "Антициклон. Ясно, спокойно, высокое самочувствие.", type: "temp" },
-        { id: 25, check: today.uvindex < 3 && today.tempmax < 8, msg: "Мало солнца. Рекомендован витамин D.", type: "health" }
-      ];
-      rules.forEach(r => r.check && alerts.push(r));
-      const narrative = alerts.length > 3 ? `AI-Брифинг: ${alerts.slice(0,3).map(a=>a.msg).join(' ')}` : alerts.length > 0 ? `AI-Брифинг: ${alerts[0].msg}` : `AI-Брифинг: Условия идеальны. Без тревожных метео-факторов.`;
-      return {
-        narrative,
-        alerts,
-        tips: [alerts.some(a=>a.id===8) ? "Мойка ✅" : "Мойка ⏳", alerts.find(a=>a.id===9) ? "Энергия ⚡" : "Энергия ✅", alerts.find(a=>a.type==='health') ? "Здоровье ⚕️" : "Здоровье 💚"]
-      };
-    };
-
-    // 🌦 Weather Engine с обработкой ошибок
-    const useWeather = () => {
-      const [data, setData] = useState(null);
-      const [loading, setLoading] = useState(true);
-      const [error, setError] = useState(null);
-      const [coords, setCoords] = useState({ lat: 55.7558, lon: 37.6173 });
-
-      useEffect(() => {
-        if (navigator.geolocation) {
-          navigator.geolocation.getCurrentPosition(
-            p => setCoords({ lat: p.coords.latitude, lon: p.coords.longitude }), 
-            err => {
-              console.warn('Geolocation error:', err);
-              setError('Геолокация отключена. Показаны данные по умолчанию.');
-            }
-          );
-        }
-      }, []);
-
-      useEffect(() => {
-        const fetch = async () => {
-          try {
-            setLoading(true);
-            console.log('Fetching weather for:', coords);
-            const url = `https://weather.visualcrossing.com/VisualCrossingWebServices/rest/services/timeline/${coords.lat},${coords.lon}/next30days?unitGroup=metric&include=days&key=${API_KEY}`;
-            const res = await fetch(url);
-            
-            if (!res.ok) {
-              const text = await res.text();
-              console.error('API Error:', res.status, text);
-              throw new Error(`Visual Crossing API: ${res.status} ${res.statusText}`);
-            }
-            
-            const json = await res.json();
-            console.log('Weather data loaded:', json.days?.length, 'days');
-            setData(json.days.map(d => ({ 
-              ...d, 
-              date: new Date(d.datetime).toLocaleDateString('ru-RU', { weekday: 'short', day: 'numeric' }) 
-            })));
-          } catch (e) {
-            console.error('Fetch error:', e);
-            setError(e.message.includes('401') 
-              ? '❌ Неверный API-ключ или домен не добавлен в Visual Crossing' 
-              : e.message.includes('404') 
-                ? '❌ Координаты не найдены' 
-                : `❌ Ошибка: ${e.message}`);
-          } finally {
-            setLoading(false);
-          }
+    const enableLaunch = () => {
+      if (allChecks()) {
+        launchBtn.disabled = false;
+        launchBtn.textContent = '🚀 Запустить SkyPulse Elite';
+        launchBtn.onclick = () => {
+          // Здесь можно редирект на реальное приложение или загрузить его динамически
+          alert('✅ Все проверки пройдены! Теперь замените diagnostic.html на index.html в вашем репозитории и обновите страницу.');
         };
-        if (coords.lat) fetch();
-      }, [coords]);
-
-      return { data, loading, error };
+      }
     };
 
-    // 🎬 Dynamic Lottie Background
-    const LottieBg = ({ weather }) => {
-      const animRef = useRef(null);
-      const asset = useMemo(() => {
-        if (!weather) return 'https://assets9.lottiefiles.com/packages/lf20_jbrw3hcz.json';
-        const c = weather.conditions?.toLowerCase() || '';
-        if (weather.snow > 0 || c.includes('snow')) return 'https://assets9.lottiefiles.com/packages/lf20_jvju0g0u.json';
-        if (weather.precip > 0.5 || c.includes('rain') || c.includes('shower')) return 'https://assets9.lottiefiles.com/packages/lf20_7s7h3q5k.json';
-        if (weather.cloudcover > 55 || c.includes('cloud') || c.includes('fog')) return 'https://assets9.lottiefiles.com/packages/lf20_4w7t8j8t.json';
-        return 'https://assets9.lottiefiles.com/packages/lf20_jbrw3hcz.json';
-      }, [weather]);
-
-      useEffect(() => {
-        const container = document.getElementById('lottie-bg');
-        if (!container) return;
-        container.innerHTML = '';
-        if (animRef.current) animRef.current.destroy();
-        try {
-          animRef.current = lottie.loadAnimation({ 
-            container, 
-            renderer: 'svg', 
-            loop: true, 
-            autoplay: true, 
-            path: asset 
-          });
-        } catch (e) {
-          console.warn('Lottie load error:', e);
-        }
-        return () => animRef.current?.destroy();
-      }, [asset]);
-
-      return <motion.div initial={{opacity:0}} animate={{opacity:0.45}} exit={{opacity:0}} className="fixed inset-0 z-0 pointer-events-none select-none" />;
-    };
-
-    // 📊 Neural Chart
-    const NeuralChart = ({ data }) => {
-      if (!data) return null;
-      return (
-        <div className="w-full h-56 md:h-72">
-          <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={data.slice(0, 14)} margin={{ top: 5, right: 5, left: -10, bottom: 0 }}>
-              <defs>
-                <linearGradient id="tGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="var(--accent)" stopOpacity={0.5}/><stop offset="95%" stopColor="var(--accent)" stopOpacity={0}/></linearGradient>
-                <linearGradient id="hGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#38bdf8" stopOpacity={0.3}/><stop offset="95%" stopColor="#38bdf8" stopOpacity={0}/></linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="#ffffff15" vertical={false} />
-              <XAxis dataKey="date" stroke="#ffffff40" fontSize={10} tickMargin={8} />
-              <YAxis stroke="#ffffff40" fontSize={10} />
-              <Tooltip content={({active, payload}) => active && payload?.length ? (<div className="obsidian-glass px-3 py-2 text-xs"><div className="font-semibold text-accent mb-1">{payload[0].payload.date}</div><div className="text-gray-300">🌡️ {payload[0].value}°C | 💧 {payload[1]?.value}%</div></div>) : null} />
-              <Area type="monotone" dataKey="tempmax" stroke="var(--accent)" strokeWidth={2.5} fill="url(#tGrad)" dot={{ r: 4, stroke: '#0A0A0A', strokeWidth: 2 }} />
-              <Area type="monotone" dataKey="humidity" stroke="#38bdf8" strokeWidth={2} fill="url(#hGrad)" dot={false} />
-            </AreaChart>
-          </ResponsiveContainer>
-        </div>
-      );
-    };
-
-    // 🖼 App Component
-    const App = () => {
-      const { data, loading, error } = useWeather();
-      const season = getPalette();
-      const today = data?.[0];
-      const ai = today ? generateBrief(data) : null;
-      const [pwaReady, setPwaReady] = useState(false);
-      const [deferredPrompt, setDeferredPrompt] = useState(null);
-      const [notifStatus, setNotifStatus] = useState('default');
-      const [swRegistered, setSwRegistered] = useState(false);
-
-      // 🔹 Авто-очистка кэша при обновлении версии
-      useEffect(() => {
-        if ('caches' in window) {
-          caches.keys().then(keys => {
-            keys.forEach(k => { if (k !== 'skypulse-v3') caches.delete(k); });
-          });
-        }
-      }, []);
-
-      // PWA Install Logic
-      useEffect(() => {
-        window.addEventListener('beforeinstallprompt', e => {
-          e.preventDefault();
-          setDeferredPrompt(e);
-          setPwaReady(true);
-        });
-        window.addEventListener('appinstalled', () => {
-          setDeferredPrompt(null);
-          setPwaReady(false);
-          setNotifStatus('prompt');
-        });
-        if ('Notification' in window) setNotifStatus(Notification.permission);
-        if ('serviceWorker' in navigator) {
-          navigator.serviceWorker.register('service-worker.js')
-            .then(reg => { setSwRegistered(true); console.log('SW registered:', reg.scope); })
-            .catch(err => console.warn('SW registration failed:', err));
-        }
-      }, []);
-
-      useEffect(() => {
-        const r = document.documentElement.style;
-        r.setProperty('--accent', season.a);
-        r.setProperty('--mesh1', season.m1);
-        r.setProperty('--mesh2', season.m2);
-      }, [season]);
-
-      const handleInstall = async () => {
-        if (!deferredPrompt) return;
-        deferredPrompt.prompt();
-        const { outcome } = await deferredPrompt.userChoice;
-        if (outcome === 'accepted') setDeferredPrompt(null);
-      };
-
-      const handleNotifPermission = async () => {
-        if (!('Notification' in window)) return alert('Браузер не поддерживает уведомления');
-        const perm = await Notification.requestPermission();
-        setNotifStatus(perm);
-        if (perm === 'granted' && swRegistered) {
-          try {
-            const sub = await navigator.serviceWorker.ready.then(reg => 
-              reg.pushManager.subscribe({ 
-                userVisibleOnly: true, 
-                applicationServerKey: urlBase64ToUint8Array('BEl62iUYgUivxIkv69yViEuiBIa-aTqM5hZj6x1y7K1q4cZ1qQ9Y7K1qQ9Y7K1qQ9Y7K1qQ9Y7K1qQ9Y7K1qQ9Y=') 
-              })
-            );
-            console.log('Push Subscribed:', sub);
-          } catch (e) { console.warn('Push subscribe error:', e); }
-        }
-      };
-
-      // 🔹 Экран ошибки с деталями для отладки
-      if (error) return (
-        <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center bg-obsidian">
-          <div className="text-red-400 text-5xl mb-4">⚠️</div>
-          <h2 className="text-xl font-bold mb-2 text-white">Не удалось загрузить данные</h2>
-          <div className="error-box text-left text-sm text-gray-300 mb-4 max-w-md">
-            <p className="font-semibold text-red-300 mb-1">Детали ошибки:</p>
-            <p>{error}</p>
-            <p className="mt-2 text-xs text-gray-400">
-              💡 Если ошибка про "401" или "API key" — зайдите в visualcrossing.com → Dashboard → API Keys → 
-              добавьте <code>denverclub82-collab.github.io</code> в поле "Allowed Domains".
-            </p>
-          </div>
-          <button onClick={()=>window.location.reload()} className="obsidian-glass px-5 py-2 text-sm hover:bg-white/10 transition mb-2">🔄 Повторить</button>
-          <button onClick={()=>{navigator.geolocation.getCurrentPosition(p=>window.location.reload());}} className="obsidian-glass px-5 py-2 text-sm hover:bg-white/10 transition">📍 Обновить геолокацию</button>
-        </div>
-      );
-
-      if (loading) return (
-        <div className="h-screen flex flex-col items-center justify-center text-gray-400 bg-obsidian">
-          <div className="w-12 h-12 border-2 border-accent border-t-transparent rounded-full animate-spin mb-4"></div>
-          <p className="animate-pulse text-sm">Загрузка погодных спутников...</p>
-          <p className="text-xs text-gray-500 mt-2">Координаты: {coords?.lat?.toFixed(2)}, {coords?.lon?.toFixed(2)}</p>
-        </div>
-      );
-
-      return (
-        <AnimatePresence>
-          <main className="min-h-screen p-4 md:p-8 max-w-7xl mx-auto space-y-5 relative z-10">
-            <LottieBg weather={today} />
-            
-            {/* PWA & Notification Controls */}
-            <div className="flex flex-wrap gap-3 justify-end">
-              {pwaReady && <button onClick={handleInstall} className="pwa-btn text-sm">📲 Установить приложение</button>}
-              <button onClick={handleNotifPermission} disabled={notifStatus === 'granted'} className="pwa-btn text-sm" style={notifStatus==='granted' ? {background:'#10b981',color:'#fff'} : {}}>
-                {notifStatus === 'granted' ? '🔔 Включено' : '🔔 Разрешить уведомления'}
-              </button>
-            </div>
-
-            <header className="obsidian-glass p-5 flex justify-between items-center liquid-hover">
-              <div>
-                <h1 className="text-2xl font-bold tracking-tight">SkyPulse <span className="text-accent">Elite</span></h1>
-                <p className="text-xs text-gray-400 mt-1">{new Date().toLocaleDateString('ru-RU', { weekday: 'long', day: 'numeric', month: 'long' })} • {season.n}</p>
-              </div>
-              <div className="text-right">
-                <span className="text-4xl font-bold">{today?.tempmax?.toFixed(1) || '--'}°</span>
-                <p className="text-sm text-gray-400 capitalize">{today?.conditions || 'Загрузка...'}</p>
-              </div>
-            </header>
-
-            <motion.div initial={{ y: 10, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="obsidian-glass p-5">
-              <div className="flex items-center gap-2 mb-2"><span className="text-accent">☀️</span><h2 className="font-semibold">AI-Брифинг</h2></div>
-              <p className="text-sm leading-relaxed text-gray-200">{ai?.narrative || 'Ожидание данных...'}</p>
-            </motion.div>
-
-            {ai?.alerts?.length > 0 && (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                {ai.alerts.slice(0,6).map((a, i) => (
-                  <motion.div key={a.id} initial={{ opacity:0, x:-8 }} animate={{ opacity:1, x:0, transition:{ delay: i*0.05 } }} className="obsidian-glass p-4 border-l-2 border-l-accent">
-                    <span className="text-xs font-bold text-accent uppercase tracking-wide">{a.type}</span>
-                    <p className="text-sm mt-1">{a.msg}</p>
-                  </motion.div>
-                ))}
-              </div>
-            )}
-
-            <div className="obsidian-glass p-4">
-              <h3 className="text-lg font-semibold mb-1">30-Дневный Нейро-Прогноз</h3>
-              <NeuralChart data={data} />
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              {[{icon:'💧',title:'Мойка авто',val:ai?.tips?.[0] || '—',col:'text-cyan-400'},{icon:'⚡',title:'Нагрузка на сеть',val:ai?.tips?.[1] || '—',col:'text-yellow-400'},{icon:'💚',title:'Био-индекс',val:ai?.tips?.[2] || '—',col:'text-emerald-400'}].map((c,i)=>(
-                <div key={i} className="obsidian-glass p-4 flex items-center gap-3 liquid-hover">
-                  <div className="p-2 bg-black/40 rounded-lg text-xl">{c.icon}</div>
-                  <div><p className="text-xs text-gray-400">{c.title}</p><p className={`font-semibold ${c.col}`}>{c.val}</p></div>
-                </div>
-              ))}
-            </div>
-          </main>
-        </AnimatePresence>
-      );
-    };
-
-    const urlBase64ToUint8Array = (base64String) => {
-      const padding = '='.repeat((4 - base64String.length % 4) % 4);
-      const base64 = (base64String + padding).replace(/\-/g, '+').replace(/_/g, '/');
-      const rawData = window.atob(base64);
-      const outputArray = new Uint8Array(rawData.length);
-      for (let i = 0; i < rawData.length; ++i) outputArray[i] = rawData.charCodeAt(i);
-      return outputArray;
-    };
-
-    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+    // Авто-проверка через 2 сек после загрузки
+    setTimeout(() => {
+      enableLaunch();
+      // Авто-тест API если онлайн
+      if (navigator.onLine) document.getElementById('testApi').click();
+    }, 2000);
   </script>
 </body>
 </html>
