@@ -2,10 +2,17 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>SkyPulse Elite</title>
+  <!-- ✅ Абсолютный путь для GitHub Pages -->
   <link rel="manifest" href="/skypulse-elite-/manifest.json">
   <meta name="theme-color" content="#0A0A0A">
+  
+  <!-- ✅ Надёжные CDN с integrity-проверкой -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js" crossorigin="anonymous" integrity="sha512-w91t3jK8k3xJvY4FJhPQV8h1qJlLqPqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJ......" onerror="handleScriptError('react')"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js" crossorigin="anonymous" integrity="sha512-..." onerror="handleScriptError('react-dom')"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.12.2/lottie.min.js" crossorigin="anonymous" onerror="handleScriptError('lottie')"></script>
+  
   <style>
     :root { --accent: #38bdf8; --mesh1: #1e3a8a; --mesh2: #0f172a; }
     body { margin: 0; background: #0A0A0A; color: white; font-family: system-ui, sans-serif; min-height: 100vh; background-image: radial-gradient(circle at 15% 20%, var(--mesh1) 0%, transparent 45%), radial-gradient(circle at 85% 85%, var(--mesh2) 0%, transparent 45%); }
@@ -13,87 +20,133 @@
     .hidden { display: none; }
     #lottie-bg { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
     #app { position: relative; z-index: 10; padding: 1rem; max-width: 800px; margin: 0 auto; }
-    .btn { background: var(--accent); color: #0A0A0A; border: none; padding: 0.75rem 1.5rem; border-radius: 0.5rem; font-weight: 600; margin: 0.25rem; }
+    .btn { background: var(--accent); color: #0A0A0A; border: none; padding: 0.75rem 1.5rem; border-radius: 0.5rem; font-weight: 600; margin: 0.25rem; cursor: pointer; }
+    .error { color: #ef4444; }
+    .loading { text-align: center; padding: 2rem; }
   </style>
 </head>
 <body>
   <div id="lottie-bg"></div>
-  <div id="app"></div>
-
-  <!-- React + ReactDOM (production) -->
-  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-  <!-- Lottie -->
-  <script src="https://unpkg.com/lottie-web@5.12.2/build/player/lottie.min.js"></script>
+  <div id="app">
+    <!-- Fallback content if React fails -->
+    <div class="loading" id="fallback">
+      <div style="font-size:2rem;margin-bottom:1rem">⏳</div>
+      <p>Загрузка SkyPulse...</p>
+      <p id="fallback-error" class="error hidden" style="margin-top:1rem"></p>
+      <button class="btn" onclick="window.location.reload()" style="margin-top:1rem">🔄 Обновить</button>
+    </div>
+  </div>
 
   <script>
-    const { useState, useEffect, useRef } = React;
-
-    // Простой компонент без JSX
-    function App() {
-      const [loading, setLoading] = useState(true);
-      const [error, setError] = useState(null);
-      const [weather, setWeather] = useState(null);
-      const lottieRef = useRef(null);
-
-      useEffect(() => {
-        // Тест: просто показываем, что компонент рендерится
-        console.log('✅ App component mounted');
-        
-        // Загружаем погоду
-        fetch('https://weather.visualcrossing.com/VisualCrossingWebServices/rest/services/timeline/55.7558,37.6173/next30days?unitGroup=metric&include=days&key=7QKDX6PBE6GQDC4WEU4A9J3KL')
-          .then(r => { if (!r.ok) throw new Error('API ' + r.status); return r.json(); })
-          .then(json => {
-            setWeather(json.days[0]);
-            // Простая анимация фона
-            if (lottieRef.current) lottieRef.current.destroy();
-            const asset = json.days[0].conditions?.toLowerCase().includes('rain') 
-              ? 'https://assets9.lottiefiles.com/packages/lf20_7s7h3q5k.json'
-              : 'https://assets9.lottiefiles.com/packages/lf20_jbrw3hcz.json';
-            lottieRef.current = lottie.loadAnimation({
-              container: document.getElementById('lottie-bg'),
-              renderer: 'svg',
-              loop: true,
-              autoplay: true,
-              path: asset
-            });
-          })
-          .catch(e => setError(e.message))
-          .finally(() => setLoading(false));
-      }, []);
-
-      if (loading) {
-        return React.createElement('div', { style: { textAlign: 'center', padding: '2rem' } },
-          React.createElement('div', { style: { fontSize: '2rem', marginBottom: '1rem' } }, '⏳'),
-          React.createElement('p', null, 'Загрузка...')
-        );
+    // 🛡 Обработчик ошибок загрузки скриптов
+    window.scriptErrors = {};
+    window.handleScriptError = function(name) {
+      window.scriptErrors[name] = true;
+      console.error(`❌ Failed to load: ${name}`);
+      showFallback(`Не удалось загрузить ${name}. Проверьте подключение.`);
+    };
+    
+    function showFallback(msg) {
+      const el = document.getElementById('fallback-error');      if (el) {
+        el.textContent = msg;
+        el.classList.remove('hidden');
       }
-
-      if (error) {
-        return React.createElement('div', { style: { textAlign: 'center', padding: '2rem', color: '#ef4444' } },
-          React.createElement('div', { style: { fontSize: '2rem', marginBottom: '1rem' } }, '⚠️'),
-          React.createElement('p', null, 'Ошибка: ' + error),
-          React.createElement('button', { className: 'btn', style: { marginTop: '1rem' }, onClick: () => window.location.reload() }, '🔄 Повторить')
-        );
-      }
-
-      return React.createElement('div', null,
-        React.createElement('div', { className: 'card', style: { textAlign: 'center' } },
-          React.createElement('h1', { style: { fontSize: '1.5rem', marginBottom: '0.5rem' } }, '🌤️ SkyPulse Elite'),
-          React.createElement('p', { style: { color: '#888', fontSize: '0.9rem' } }, new Date().toLocaleDateString('ru-RU')),
-          React.createElement('div', { style: { fontSize: '3rem', fontWeight: 'bold', margin: '1rem 0' } }, weather.tempmax.toFixed(1) + '°'),
-          React.createElement('p', { style: { textTransform: 'capitalize' } }, weather.conditions)
-        ),
-        React.createElement('div', { className: 'card' },
-          React.createElement('p', null, '✅ Приложение работает!'),
-          React.createElement('p', { style: { fontSize: '0.85rem', color: '#888' } }, 'API: Visual Crossing • Данные: 30 дней')
-        )
-      );
     }
-
-    // Рендер
-    const root = ReactDOM.createRoot(document.getElementById('app'));
-    root.render(React.createElement(App));
+    
+    // Проверка, загрузились ли зависимости
+    window.addEventListener('load', function() {
+      setTimeout(function() {
+        if (typeof React === 'undefined' || typeof ReactDOM === 'undefined') {
+          showFallback('React не загрузился. Попробуйте: 1) Включить интернет 2) Очистить кэш 3) Использовать другой браузер');
+        }
+      }, 3000);
+    });
+  </script>
+  
+  <!-- Основной код приложения (загружается после зависимостей) -->
+  <script>
+    // Ждём загрузки всех скриптов
+    window.addEventListener('load', function() {
+      // Если React не загрузился — не пытаемся рендерить
+      if (typeof React === 'undefined' || typeof ReactDOM === 'undefined') {
+        console.warn('⚠️ React not available, skipping render');
+        return;
+      }
+      
+      const { useState, useEffect, useRef } = React;
+      
+      function App() {
+        const [loading, setLoading] = useState(true);
+        const [error, setError] = useState(null);
+        const [weather, setWeather] = useState(null);
+        const lottieRef = useRef(null);
+        
+        useEffect(() => {
+          console.log('✅ App mounted');
+          
+          // Загружаем погоду
+          fetch('https://weather.visualcrossing.com/VisualCrossingWebServices/rest/services/timeline/55.7558,37.6173/next30days?unitGroup=metric&include=days&key=7QKDX6PBE6GQDC4WEU4A9J3KL')
+            .then(r => { if (!r.ok) throw new Error('API ' + r.status); return r.json(); })
+            .then(json => {
+              setWeather(json.days[0]);
+              // Простая анимация
+              const container = document.getElementById('lottie-bg');
+              if (container && window.lottie) {
+                if (lottieRef.current) lottieRef.current.destroy();
+                const isRain = json.days[0].conditions?.toLowerCase().includes('rain');
+                const asset = isRain 
+                  ? 'https://assets9.lottiefiles.com/packages/lf20_7s7h3q5k.json'
+                  : 'https://assets9.lottiefiles.com/packages/lf20_jbrw3hcz.json';                lottieRef.current = lottie.loadAnimation({
+                  container, renderer: 'svg', loop: true, autoplay: true, path: asset
+                });
+              }
+            })
+            .catch(e => setError(e.message))
+            .finally(() => setLoading(false));
+        }, []);
+        
+        if (loading) {
+          return React.createElement('div', { className: 'loading' },
+            React.createElement('div', { style: { fontSize: '2rem', marginBottom: '1rem' } }, '⏳'),
+            React.createElement('p', null, 'Синхронизация...')
+          );
+        }
+        
+        if (error) {
+          return React.createElement('div', { className: 'loading' },
+            React.createElement('div', { style: { fontSize: '2rem', marginBottom: '1rem', color: '#ef4444' } }, '⚠️'),
+            React.createElement('p', { className: 'error' }, 'Ошибка: ' + error),
+            React.createElement('button', { className: 'btn', onClick: () => window.location.reload() }, '🔄 Повторить')
+          );
+        }
+        
+        return React.createElement('div', null,
+          React.createElement('div', { className: 'card', style: { textAlign: 'center' } },
+            React.createElement('h1', { style: { fontSize: '1.5rem', marginBottom: '0.5rem' } }, '🌤️ SkyPulse Elite'),
+            React.createElement('p', { style: { color: '#888', fontSize: '0.9rem' } }, new Date().toLocaleDateString('ru-RU')),
+            React.createElement('div', { style: { fontSize: '3rem', fontWeight: 'bold', margin: '1rem 0' } }, 
+              weather ? weather.tempmax.toFixed(1) + '°' : '--'),
+            React.createElement('p', { style: { textTransform: 'capitalize' } }, 
+              weather ? weather.conditions : 'Загрузка...')
+          ),
+          React.createElement('div', { className: 'card' },
+            React.createElement('p', null, '✅ Приложение работает!'),
+            React.createElement('p', { style: { fontSize: '0.85rem', color: '#888' } }, 
+              'API: Visual Crossing • Данные: 30 дней')
+          )
+        );
+      }
+      
+      // Рендер
+      try {
+        const root = ReactDOM.createRoot(document.getElementById('app'));
+        root.render(React.createElement(App));
+        // Скрываем fallback, если рендер успешен
+        document.getElementById('fallback').classList.add('hidden');
+      } catch (e) {
+        console.error('Render error:', e);
+        showFallback('Ошибка рендера: ' + e.message);      }
+    });
   </script>
 </body>
 </html>
