@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>SkyPulse Debug</title>
+  <!-- 📱 Встроенная консоль для мобильных -->
+  <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { 
+      font-family: system-ui, -apple-system, sans-serif; 
+      background: #0A0A0A; 
+      color: #fff; 
+      padding: 1rem; 
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+    h1 { font-size: 1.3rem; margin-bottom: 1rem; color: #38bdf8; }
+    .card { 
+      background: rgba(255,255,255,0.05); 
+      border: 1px solid rgba(255,255,255,0.1); 
+      border-radius: 12px; 
+      padding: 1rem; 
+      margin-bottom: 1rem;
+    }
+    .status { display: flex; align-items: center; gap: 0.5rem; margin: 0.4rem 0; font-size: 0.95rem; }
+    .ok { color: #10b981; }
+    .err { color: #ef4444; font-weight: 500; }
+    .warn { color: #fbbf24; }
+    .log-box { 
+      background: #000; 
+      border-radius: 8px; 
+      padding: 0.75rem; 
+      font-family: monospace; 
+      font-size: 0.8rem; 
+      max-height: 150px; 
+      overflow-y: auto; 
+      white-space: pre-wrap;
+      border: 1px solid #333;
+      margin-top: 0.5rem;
+    }
+    button {
+      background: #38bdf8;
+      color: #0A0A0A;
+      border: none;
+      padding: 0.75rem 1.25rem;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      margin: 0.25rem 0;
+      width: 100%;
+      font-size: 1rem;
+    }
+    button:hover { opacity: 0.9; }
+    .hidden { display: none; }
+    #console-toggle {
+      position: fixed; bottom: 1rem; right: 1rem;
+      background: #ef4444; color: white;
+      width: 50px; height: 50px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: bold; cursor: pointer;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      z-index: 1000;
+    }
+  </style>
+</head>
+<body>
+  <h1>🔍 SkyPulse — Отладка</h1>
+  
+  <div class="card">
+    <strong>📋 Базовые проверки</strong>
+    <div id="checks"></div>
+  </div>
+
+  <div class="card">
+    <strong>🌐 Тест API</strong>
+    <button onclick="testAPI()">🔄 Проверить Visual Crossing</button>
+    <div id="apiLog" class="log-box hidden">Ожидание...</div>
+  </div>
+
+  <div class="card">
+    <strong>📁 Тест файлов</strong>
+    <button onclick="testFiles()">🔄 Проверить manifest.json</button>
+    <div id="fileLog" class="log-box hidden">Ожидание...</div>
+  </div>
+
+  <div class="card">
+    <strong>⚛️ Тест React</strong>
+    <button onclick="testReact()">🔄 Загрузить React</button>
+    <div id="reactLog" class="log-box hidden">Ожидание...</div>
+  </div>
+
+  <div class="card">
+    <strong>📱 Инфо об устройстве</strong>
+    <div id="deviceInfo" class="log-box" style="max-height:100px"></div>
+  </div>
+
+  <div id="console-toggle" onclick="toggleEruda()">⚙️</div>
+
+  <script>
+    // 📱 Инициализация Eruda (консоль на экране)
+    try { eruda.init({ defaults: { displaySize: 40 } }); } catch(e) {}
+
+    const log = (el, msg, type = 'info') => {
+      el.classList.remove('hidden');
+      const time = new Date().toLocaleTimeString();
+      el.textContent += `[${time}] ${msg}\n`;
+      el.scrollTop = el.scrollHeight;
+      if (type === 'err') el.style.borderColor = '#ef4444';
+      if (type === 'ok') el.style.borderColor = '#10b981';
+      console.log(msg);
+    };
+
+    const check = (name, result, details = '') => {
+      const div = document.createElement('div');
+      div.className = `status ${result ? 'ok' : 'err'}`;
+      div.innerHTML = `<span>${result ? '✅' : '❌'}</span> ${name}${details ? `<br><small style="color:#888">${details}</small>` : ''}`;
+      document.getElementById('checks').appendChild(div);
+      return result;
+    };
+
+    // 📱 Device info
+    (function() {
+      const el = document.getElementById('deviceInfo');
+      el.textContent = `
+UA: ${navigator.userAgent.slice(0,60)}...
+Platform: ${navigator.platform}
+Online: ${navigator.onLine}
+HTTPS: ${location.protocol === 'https:' ? '✅' : '❌'}
+Path: ${location.pathname}
+Origin: ${location.origin}
+      `.trim();
+    })();
+
+    // 🔍 Basic checks
+    (function() {
+      check('DOM loaded', true);
+      check('CSS applied', getComputedStyle(document.body).backgroundColor === 'rgb(10, 10, 10)', 'bg: #0A0A0A');
+      check('JavaScript', typeof document !== 'undefined');
+      check('Fetch API', typeof fetch === 'function');
+      check('Geolocation', 'geolocation' in navigator);
+      check('ServiceWorker', 'serviceWorker' in navigator);
+      check('Manifest link', !!document.querySelector('link[rel="manifest"]'));
+    })();
+
+    // 🌐 API Test
+    async function testAPI() {
+      const el = document.getElementById('apiLog');
+      log(el, '🔄 Запрос к Visual Crossing...');
+      try {
+        const url = 'https://weather.visualcrossing.com/VisualCrossingWebServices/rest/services/timeline/55.7558,37.6173/next30days?unitGroup=metric&include=days&key=7QKDX6PBE6GQDC4WEU4A9J3KL';
+        log(el, `GET ${url.slice(0,80)}...`);
+        const res = await fetch(url);
+        log(el, `📡 Статус: ${res.status} ${res.statusText}`);
+        if (!res.ok) { const t = await res.text(); log(el, `❌ Ответ: ${t.slice(0,150)}`, 'err'); return; }
+        const json = await res.json();
+        log(el, `✅ Дней прогноза: ${json.days?.length}`, 'ok');
+        log(el, `📍 Город: ${json.resolvedAddress || 'N/A'}`, 'ok');
+        check('Visual Crossing API', true, `${json.days?.length} дней`);
+      } catch (e) { log(el, `❌ Ошибка: ${e.message}`, 'err'); check('Visual Crossing API', false); }
+    }
+
+    // 📁 File Test
+    async function testFiles() {
+      const el = document.getElementById('fileLog');
+      log(el, '🔄 Проверка manifest.json...');
+      const paths = ['./manifest.json', 'manifest.json', '/skypulse-elite-/manifest.json', '/manifest.json'];
+      for (const p of paths) {
+        try {
+          const res = await fetch(p);
+          if (res.ok) {
+            const m = await res.json();
+            log(el, `✅ Найден: ${p}`, 'ok');
+            log(el, `📛 Name: ${m.name}`, 'ok');
+            check('manifest.json', true, `via ${p}`);
+            return;
+          }
+        } catch(e) {}
+      }
+      log(el, '❌ Не найден ни по одному пути', 'err');
+      check('manifest.json', false);
+    }
+
+    // ⚛️ React Test
+    function testReact() {
+      const el = document.getElementById('reactLog');
+      log(el, '🔄 Проверка React...');
+      if (typeof React === 'undefined') {
+        log(el, '❌ React не загружен. Попробуйте добавить:<br><script src="https://unpkg.com/react@18/umd/react.production.min.js"><\/script>', 'err');
+        check('React', false);
+        return;
+      }
+      if (typeof ReactDOM === 'undefined') {
+        log(el, '❌ ReactDOM не загружен', 'err');
+        check('ReactDOM', false);
+        return;
+      }
+      log(el, `✅ React ${React.version}`, 'ok');
+      log(el, `✅ ReactDOM ${ReactDOM.version}`, 'ok');
+      check('React', true, React.version);
+      check('ReactDOM', true, ReactDOM.version);
+      
+      // Тест рендера
+      try {
+        const div = document.createElement('div');
+        const root = ReactDOM.createRoot(div);
+        root.render(React.createElement('div', null, 'Test'));
+        log(el, '✅ Рендер работает', 'ok');
+        check('React Render', true);
+      } catch (e) {
+        log(el, `❌ Ошибка рендера: ${e.message}`, 'err');
+        check('React Render', false);
+      }
+    }
+
+    // ⚙️ Toggle Eruda console
+    function toggleEruda() {
+      try { eruda.show(); } catch(e) { alert('Eruda не инициализирован'); }
+    }
+
+    // Авто-тесты при загрузке
+    window.addEventListener('load', () => {
+      console.log('🔍 Debug page loaded');
+      setTimeout(() => { if (navigator.onLine) testAPI(); }, 1000);
+    });
+  </script>
+</body>
+</html>
